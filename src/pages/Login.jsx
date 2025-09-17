@@ -126,7 +126,7 @@ export default function Login({ onLogin, onSwitchToSignup }) {
               <button
                 type="button"
                 onClick={onSwitchToSignup}
-                className="ml-1 text-purple-600 hover:text-purple-700 font-medium text-lg"
+                className="ml-1 text-purple-600 hover:text-purple-700 font-medium text-sm"
               >
                 회원가입
               </button>
