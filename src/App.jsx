@@ -152,17 +152,17 @@ export default function App() {
         </div>
       </main>
 
-      <footer className="bg-gray-800 text-white py-4 text-center text-sm">
+      <footer className="bg-gradient-to-br from-blue-50 to-purple-50 text-gray-800 py-4 text-center text-sm">
         <div className="mx-auto max-w-7xl px-6">
           <p>
-            © 2025 Datadog Runners. All rights reserved. | {' '}
+            © 2025 Datadog Runners. All rights reserved. {' '}
             <a
               href="https://bit.ly/DD-FE-FEEDBACK"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-400 hover:text-blue-300 underline"
+              className="text-purple-600 hover:text-purple-700 underline"
             >
-              FeedBack
+              feedback
             </a>
           </p>
         </div>
