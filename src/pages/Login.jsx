@@ -1,5 +1,5 @@
+import { Alert, Button, Card, Label, TextInput } from 'flowbite-react';
 import { useState } from 'react';
-import { Card, Button, Label, TextInput, Alert } from 'flowbite-react';
 import { setRumUser } from '../lib/rum';
 
 export default function Login({ onLogin, onSwitchToSignup }) {
@@ -12,16 +12,16 @@ export default function Login({ onLogin, onSwitchToSignup }) {
     e.preventDefault();
     setErr('');
     setLoading(true);
-    
+
     try {
       // 1. 로그인 시도
       const loginResponse = await fetch('/api/auth/login', {
         method: 'POST',
-        headers:{'Content-Type':'application/json'},
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ id, pw })
       });
-      
+
       if (loginResponse.ok) {
         // 2. 로그인 성공 시 사용자 정보 가져오기
         try {
@@ -29,21 +29,21 @@ export default function Login({ onLogin, onSwitchToSignup }) {
             method: 'GET',
             credentials: 'include'
           });
-          
+
           if (userResponse.ok) {
             const userInfo = await userResponse.json();
             // 3. Datadog RUM에 사용자 정보 설정 - 디버깅 추가
             console.log('🔍 API 응답 원본:', userInfo);
             console.log('🔍 DD_RUM 객체 상태:', window.DD_RUM ? '✅ 존재' : '❌ 없음');
             console.log('🔍 setUser 함수:', window.DD_RUM?.setUser ? '✅ 존재' : '❌ 없음');
-            
+
             setRumUser(userInfo);
             console.log('🔐 로그인 성공 & RUM User 설정 시도:', userInfo);
           }
         } catch (userError) {
           console.warn('⚠️ 사용자 정보 조회 실패 (로그인은 성공):', userError);
         }
-        
+
         onLogin();
       } else {
         setErr('로그인에 실패했습니다. 아이디와 비밀번호를 확인해주세요.');
@@ -64,7 +64,7 @@ export default function Login({ onLogin, onSwitchToSignup }) {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Datadog Runners</h1>
             <p className="text-gray-500">게임에 참가하려면 로그인하세요</p>
           </div>
-          
+
           <form onSubmit={submit} className="space-y-6">
             <div>
               <Label htmlFor="userId" value="아이디" className="mb-2 block text-sm font-medium text-gray-900" />
@@ -79,7 +79,7 @@ export default function Login({ onLogin, onSwitchToSignup }) {
                 sizing="lg"
               />
             </div>
-            
+
             <div>
               <Label htmlFor="password" value="비밀번호" className="mb-2 block text-sm font-medium text-gray-900" />
               <TextInput
@@ -93,15 +93,15 @@ export default function Login({ onLogin, onSwitchToSignup }) {
                 sizing="lg"
               />
             </div>
-            
+
             {err && (
               <Alert color="failure" className="mb-4">
                 <span className="font-medium">오류!</span> {err}
               </Alert>
             )}
-            
-            <Button 
-              type="submit" 
+
+            <Button
+              type="submit"
               className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
               size="lg"
               disabled={loading}
@@ -119,14 +119,14 @@ export default function Login({ onLogin, onSwitchToSignup }) {
               )}
             </Button>
           </form>
-          
+
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-500">
-              계정이 없으신가요? 
-              <button 
+              계정이 없으신가요?
+              <button
                 type="button"
                 onClick={onSwitchToSignup}
-                className="ml-1 text-purple-600 hover:text-purple-700 font-medium"
+                className="ml-1 text-purple-600 hover:text-purple-700 font-medium text-lg"
               >
                 회원가입
               </button>
