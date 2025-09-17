@@ -1,22 +1,22 @@
 // 메인 App 컴포넌트 - 인증, 라우팅, 네비게이션 관리
 // 기존 demo 전용에서 회원가입 지원 및 사용자별 개인화 기능으로 확장
-import { BrowserRouter, Routes, Route, Link, Navigate } from 'react-router-dom';
-import { Navbar, Avatar, Dropdown, Button } from 'flowbite-react';
-import Login from './pages/Login.jsx';
-import Signup from './pages/Signup.jsx';  // 회원가입 기능 추가
-import Game from './pages/Game.jsx';
-import Ranking from './pages/Ranking.jsx';
-import Chat from './pages/Chat.jsx';
+import { Avatar, Dropdown, Navbar } from 'flowbite-react';
 import { useEffect, useState } from 'react';
-import { setRumUser, clearRumUser } from './lib/rum';
+import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router-dom';
+import { clearRumUser, setRumUser } from './lib/rum';
+import Chat from './pages/Chat.jsx';
+import Game from './pages/Game.jsx';
+import Login from './pages/Login.jsx';
+import Ranking from './pages/Ranking.jsx';
+import Signup from './pages/Signup.jsx'; // 회원가입 기능 추가
 
 export default function App() {
   // 인증 상태 관리
   const [authed, setAuthed] = useState(false);
-  
+
   // 로그인/회원가입 화면 전환 관리 - 새로운 사용자 가입 지원
   const [showSignup, setShowSignup] = useState(false);
-  
+
   // 현재 로그인한 사용자 정보 - 네비게이션 바 및 채팅에서 표시
   const [currentUser, setCurrentUser] = useState('');
 
@@ -73,14 +73,14 @@ export default function App() {
   const AuthPage = () => {
     if (showSignup) {
       return (
-        <Signup 
+        <Signup
           onLogin={handleLoginSuccess}                    // 회원가입 후 자동 로그인
           onSwitchToLogin={() => setShowSignup(false)}   // "로그인" 버튼 클릭 시
         />
       );
     } else {
       return (
-        <Login 
+        <Login
           onLogin={handleLoginSuccess}                    // 로그인 성공 시
           onSwitchToSignup={() => setShowSignup(true)}   // "회원가입" 버튼 클릭 시
         />
@@ -105,10 +105,10 @@ export default function App() {
                 inline
                 label={
                   // 아바타 개선: 기존 고정 이미지 → 사용자 ID 첫 글자 기반 이니셜 표시
-                  <Avatar 
-                    alt="User settings" 
+                  <Avatar
+                    alt="User settings"
                     placeholderInitials={currentUser?.charAt(0)?.toUpperCase() || '?'}
-                    rounded 
+                    rounded
                     className="ring-2 ring-white"
                     data-dd-action-name="사용자 아바타 클릭"
                   />
@@ -140,7 +140,7 @@ export default function App() {
           </>
         )}
       </Navbar>
-      
+
       <main className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-6">
         <div className="mx-auto max-w-7xl">
           <Routes>
@@ -151,6 +151,22 @@ export default function App() {
           </Routes>
         </div>
       </main>
+
+      <footer className="bg-gray-800 text-white py-4 text-center text-sm">
+        <div className="mx-auto max-w-7xl px-6">
+          <p>
+            © 2025 Datadog Runners. All rights reserved. | {' '}
+            <a
+              href="https://bit.ly/DD-FE-FEEDBACK"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-400 hover:text-blue-300 underline"
+            >
+              FeedBack
+            </a>
+          </p>
+        </div>
+      </footer>
     </BrowserRouter>
   );
 }

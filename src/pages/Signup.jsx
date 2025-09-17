@@ -1,5 +1,5 @@
+import { Alert, Button, Card, Label, TextInput } from 'flowbite-react';
 import { useState } from 'react';
-import { Card, Button, Label, TextInput, Alert } from 'flowbite-react';
 
 export default function Signup({ onLogin, onSwitchToLogin }) {
   const [id, setId] = useState('');
@@ -11,7 +11,7 @@ export default function Signup({ onLogin, onSwitchToLogin }) {
   const submit = async (e) => {
     e.preventDefault();
     setErr('');
-    
+
     // Client-side validation
     if (id.length < 3) {
       setErr('아이디는 3글자 이상이어야 합니다.');
@@ -25,9 +25,9 @@ export default function Signup({ onLogin, onSwitchToLogin }) {
       setErr('비밀번호가 일치하지 않습니다.');
       return;
     }
-    
+
     setLoading(true);
-    
+
     try {
       const r = await fetch('/api/auth/signup', {
         method: 'POST',
@@ -35,9 +35,9 @@ export default function Signup({ onLogin, onSwitchToLogin }) {
         credentials: 'include',
         body: JSON.stringify({ id, pw })
       });
-      
+
       const data = await r.json();
-      
+
       if (r.ok) {
         onLogin(); // Auto login after successful signup
       } else {
@@ -59,14 +59,14 @@ export default function Signup({ onLogin, onSwitchToLogin }) {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Datadog Runners</h1>
             <p className="text-gray-500">새 계정을 만들어 게임을 시작하세요</p>
           </div>
-          
+
           <form onSubmit={submit} className="space-y-6">
             <div>
-              <Label htmlFor="userId" value="아이디" className="mb-2 block text-sm font-medium text-gray-900" />
+              <Label htmlFor="userId" value="아이디 (본인 이름을 포함해주세요 - 출석 확인을 위해)" className="mb-2 block text-sm font-medium text-gray-900" />
               <TextInput
                 id="userId"
                 type="text"
-                placeholder="3글자 이상의 아이디"
+                placeholder="본인 이름을 포함한 아이디 (3글자 이상)"
                 value={id}
                 onChange={(e) => setId(e.target.value)}
                 required
@@ -74,7 +74,7 @@ export default function Signup({ onLogin, onSwitchToLogin }) {
                 sizing="lg"
               />
             </div>
-            
+
             <div>
               <Label htmlFor="password" value="비밀번호" className="mb-2 block text-sm font-medium text-gray-900" />
               <TextInput
@@ -88,7 +88,7 @@ export default function Signup({ onLogin, onSwitchToLogin }) {
                 sizing="lg"
               />
             </div>
-            
+
             <div>
               <Label htmlFor="passwordConfirm" value="비밀번호 확인" className="mb-2 block text-sm font-medium text-gray-900" />
               <TextInput
@@ -102,15 +102,15 @@ export default function Signup({ onLogin, onSwitchToLogin }) {
                 sizing="lg"
               />
             </div>
-            
+
             {err && (
               <Alert color="failure" className="mb-4">
                 <span className="font-medium">오류!</span> {err}
               </Alert>
             )}
-            
-            <Button 
-              type="submit" 
+
+            <Button
+              type="submit"
               className="w-full !bg-gradient-to-r !from-lime-600 !to-green-600 hover:!from-lime-700 hover:!to-green-700"
               size="lg"
               disabled={loading}
@@ -132,11 +132,11 @@ export default function Signup({ onLogin, onSwitchToLogin }) {
               )}
             </Button>
           </form>
-          
+
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-500">
-              이미 계정이 있으신가요? 
-              <button 
+              이미 계정이 있으신가요?
+              <button
                 type="button"
                 onClick={onSwitchToLogin}
                 className="ml-1 text-purple-600 hover:text-purple-700 font-medium"
