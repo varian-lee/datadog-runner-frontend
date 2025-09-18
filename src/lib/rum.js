@@ -15,18 +15,42 @@
  * - VITE_DD_ENV: 환경 태그 (기본: demo)
  */
 export function initRUM() {
-  if (!window.DD_RUM) return;
+  if (!window.DD_RUM) {
+    console.warn('🚨 Datadog RUM SDK가 로드되지 않았습니다.');
+    return;
+  }
+
+  const appId = import.meta.env.VITE_DD_RUM_APP_ID;
+  const clientToken = import.meta.env.VITE_DD_RUM_CLIENT_TOKEN;
+
+  if (!appId || !clientToken) {
+    console.error('🚨 Datadog RUM 환경변수가 설정되지 않았습니다:', {
+      VITE_DD_RUM_APP_ID: appId ? '✅ 설정됨' : '❌ 없음',
+      VITE_DD_RUM_CLIENT_TOKEN: clientToken ? '✅ 설정됨' : '❌ 없음',
+      VITE_DD_SITE: import.meta.env.VITE_DD_SITE || 'datadoghq.com (기본값)',
+      VITE_DD_ENV: import.meta.env.VITE_DD_ENV || 'demo (기본값)'
+    });
+    return;
+  }
+
+  console.log('🔧 Datadog RUM 초기화 중...', {
+    applicationId: appId,
+    site: import.meta.env.VITE_DD_SITE || 'datadoghq.com',
+    env: import.meta.env.VITE_DD_ENV || 'demo',
+    service: 'datadog-runner-frontend'
+  });
+
   window.DD_RUM.init({
-    applicationId: import.meta.env.VITE_DD_RUM_APP_ID,
-    clientToken:    import.meta.env.VITE_DD_RUM_CLIENT_TOKEN,
-    site:           import.meta.env.VITE_DD_SITE || 'datadoghq.com',
-    service:        'datadog-runner-frontend',
-    env:            import.meta.env.VITE_DD_ENV || 'demo',
-    version:        import.meta.env.VITE_APP_VERSION || '0.1.0',
+    applicationId: appId,
+    clientToken: clientToken,
+    site: import.meta.env.VITE_DD_SITE || 'datadoghq.com',
+    service: 'datadog-runner-frontend',
+    env: import.meta.env.VITE_DD_ENV || 'demo',
+    version: import.meta.env.VITE_APP_VERSION || '0.1.0',
     trackUserInteractions: true,
-    trackResources:        true,
-    trackLongTasks:        true,
-    sessionSampleRate:     100,
+    trackResources: true,
+    trackLongTasks: true,
+    sessionSampleRate: 100,
     sessionReplaySampleRate: 100,
     defaultPrivacyLevel: 'mask-user-input',
     silentMultipleInit: true,
@@ -38,6 +62,15 @@ export function initRUM() {
       },
       {
         match: /^https?:\/\/.*\.ap-northeast-2\.elb\.amazonaws\.com/,
+        propagatorTypes: ["datadog", "tracecontext"]
+      },
+      // 실제 사용 도메인 추가
+      {
+        match: "https://game.the-test.work",
+        propagatorTypes: ["datadog", "tracecontext"]
+      },
+      {
+        match: /^https?:\/\/game\.the-test\.work/,
         propagatorTypes: ["datadog", "tracecontext"]
       },
       {
@@ -52,6 +85,8 @@ export function initRUM() {
     traceSampleRate: 100, // Backend traces 샘플링 비율
   });
   window.DD_RUM.startSessionReplayRecording();
+
+  console.log('✅ Datadog RUM 초기화 완료! RUM-APM 분산 트레이싱 활성화됨');
 }
 
 export function rumAction(name, attrs = {}) {
