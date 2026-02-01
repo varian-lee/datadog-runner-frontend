@@ -122,7 +122,7 @@ export default function Login({ onLogin, onSwitchToSignup }) {
 
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-500">
-              계정이 없으신가요?
+              계정이 없으신가요??
               <button
                 type="button"
                 onClick={onSwitchToSignup}
