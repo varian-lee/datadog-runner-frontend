@@ -1,10 +1,11 @@
 // 메인 App 컴포넌트 - 인증, 라우팅, 네비게이션 관리
 // 기존 demo 전용에서 회원가입 지원 및 사용자별 개인화 기능으로 확장
-import { Avatar, Dropdown, Navbar } from 'flowbite-react';
+import { Avatar, Dropdown, Modal, Navbar } from 'flowbite-react';
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router-dom';
 import { clearRumUser, setRumUser } from './lib/rum';
 import Chat from './pages/Chat.jsx';
+import Customize from './pages/Customize.jsx';
 import Game from './pages/Game.jsx';
 import Login from './pages/Login.jsx';
 import Ranking from './pages/Ranking.jsx';
@@ -19,6 +20,39 @@ export default function App() {
 
   // 현재 로그인한 사용자 정보 - 네비게이션 바 및 채팅에서 표시
   const [currentUser, setCurrentUser] = useState('');
+
+  // 🏆 업적 모달 상태
+  const [showAchievements, setShowAchievements] = useState(false);
+  const [achievements, setAchievements] = useState({
+    bestScore: 0,
+    playCount: 0,
+    totalScore: 0
+  });
+  const [loadingAchievements, setLoadingAchievements] = useState(false);
+
+  // 🏆 업적 조회 함수
+  const fetchAchievements = async () => {
+    setLoadingAchievements(true);
+    try {
+      const response = await fetch('/api/customization', { credentials: 'include' });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.achievements) {
+          setAchievements(data.achievements);
+        }
+      }
+    } catch (e) {
+      console.error('업적 조회 실패:', e);
+    } finally {
+      setLoadingAchievements(false);
+    }
+  };
+
+  // 업적 모달 열기
+  const openAchievements = () => {
+    fetchAchievements();
+    setShowAchievements(true);
+  };
 
   // 앱 초기화 시 세션 확인 - 새로고침해도 로그인 상태 유지
   useEffect(() => {
@@ -119,6 +153,14 @@ export default function App() {
                   <span className="block text-sm">플레이어</span>
                   <span className="block truncate text-sm font-medium">{currentUser || '사용자'}</span>
                 </Dropdown.Header>
+                {/* 🏆 업적 보기 */}
+                <Dropdown.Item
+                  onClick={openAchievements}
+                  className="cursor-pointer"
+                >
+                  🏆 업적 보기
+                </Dropdown.Item>
+                <Dropdown.Divider />
                 {/* 로그아웃: 기존 API 호출 방식 → 즉시 상태 리셋으로 UX 개선 */}
                 <Dropdown.Item onClick={handleLogout} className="text-red-600 hover:bg-red-50 cursor-pointer">
                   로그아웃
@@ -136,6 +178,9 @@ export default function App() {
               <Navbar.Link as={Link} to="/chat" className="text-white hover:text-purple-200 text-base font-medium">
                 💬 채팅
               </Navbar.Link>
+              <Navbar.Link as={Link} to="/customize" className="text-white hover:text-purple-200 text-base font-medium">
+                🎨 꾸미기
+              </Navbar.Link>
             </Navbar.Collapse>
           </>
         )}
@@ -148,6 +193,7 @@ export default function App() {
             <Route path="/game" element={authed ? <Game /> : <Navigate to="/" />} />
             <Route path="/ranking" element={authed ? <Ranking /> : <Navigate to="/" />} />
             <Route path="/chat" element={authed ? <Chat /> : <Navigate to="/" />} />
+            <Route path="/customize" element={authed ? <Customize /> : <Navigate to="/" />} />
           </Routes>
         </div>
       </main>
@@ -167,6 +213,89 @@ export default function App() {
           </p>
         </div>
       </footer>
+
+      {/* 🏆 업적 모달 - 배경 반투명 */}
+      <Modal
+        show={showAchievements}
+        onClose={() => setShowAchievements(false)}
+        size="md"
+        theme={{
+          root: {
+            base: "fixed inset-x-0 top-0 z-50 h-screen overflow-y-auto overflow-x-hidden md:inset-0 md:h-full",
+            show: {
+              on: "flex bg-gray-900/30 backdrop-blur-sm",
+              off: "hidden"
+            }
+          }
+        }}
+      >
+        <Modal.Header>🏆 나의 업적</Modal.Header>
+        <Modal.Body>
+          {loadingAchievements ? (
+            <div className="text-center py-8">
+              <div className="animate-spin inline-block w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full"></div>
+              <p className="mt-2 text-gray-500">로딩 중...</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* 플레이어 정보 */}
+              <div className="text-center pb-4 border-b">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full text-white text-2xl font-bold mb-2">
+                  {currentUser?.charAt(0)?.toUpperCase() || '?'}
+                </div>
+                <p className="text-lg font-semibold text-gray-700">{currentUser}</p>
+              </div>
+
+              {/* 업적 카드들 */}
+              <div className="grid grid-cols-1 gap-4">
+                {/* 최고 점수 */}
+                <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl p-4 border border-yellow-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-3xl">🥇</span>
+                      <div>
+                        <p className="text-sm text-gray-500">최고 점수</p>
+                        <p className="text-2xl font-bold text-yellow-600">{achievements.bestScore.toLocaleString()}점</p>
+                      </div>
+                    </div>
+                    {achievements.bestScore >= 500 && (
+                      <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded-full">🎩 모자 해금!</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* 누적 플레이 횟수 */}
+                <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-3xl">🎮</span>
+                      <div>
+                        <p className="text-sm text-gray-500">누적 플레이 횟수</p>
+                        <p className="text-2xl font-bold text-blue-600">{achievements.playCount.toLocaleString()}회</p>
+                      </div>
+                    </div>
+                    {achievements.playCount >= 10 && (
+                      <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">🎨 색상 해금!</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* 누적 점수 */}
+                <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">⭐</span>
+                    <div>
+                      <p className="text-sm text-gray-500">누적 점수</p>
+                      <p className="text-2xl font-bold text-purple-600">{achievements.totalScore.toLocaleString()}점</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          )}
+        </Modal.Body>
+      </Modal>
     </BrowserRouter>
   );
 }
