@@ -538,10 +538,6 @@ export default function Game() {
 
   return (
     <div className="max-w-6xl mx-auto px-4">
-      <h2 style={{ textAlign: 'center', color: '#4b1f7e', marginBottom: '16px' }}>
-        🐶 Datadog Pup Runner (HTML Edition)
-      </h2>
-
       {/* 메인 레이아웃: 게임 + 동시접속자 패널 */}
       <div className="flex flex-col lg:flex-row gap-4">
         {/* 왼쪽: 게임 영역 */}
@@ -976,7 +972,7 @@ export default function Game() {
 
                       {/* 최고 점수 */}
                       <div className="text-right flex items-center gap-0.5">
-                        <span className="text-xs">🏆</span>
+                        <span className="text-xs">🏆 </span>
                         <span className="text-xs text-gray-500">{userBest}</span>
                       </div>
                     </div>

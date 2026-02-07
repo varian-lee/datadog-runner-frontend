@@ -1,8 +1,8 @@
+import { Avatar, Badge, Button, Card, TextInput } from 'flowbite-react';
 import { useEffect, useRef, useState } from 'react';
-import { Card, Button, TextInput, Badge, Avatar } from 'flowbite-react';
 import { rumAction } from '../lib/rum';
 
-export default function Chat(){
+export default function Chat() {
   const [msgs, setMsgs] = useState([]);
   const [text, setText] = useState('');
   const [isConnected, setIsConnected] = useState(false);
@@ -24,7 +24,7 @@ export default function Chat(){
   useEffect(() => {
     // 🎯 퍼널 추적: 채팅 페이지 방문
     rumAction('page_visited', { page: 'chat' });
-    
+
     setUserLoading(true);
     fetch('/api/session/me', { credentials: 'include' })
       .then(r => {
@@ -53,31 +53,31 @@ export default function Chat(){
       });
   }, []);
 
-  useEffect(()=>{
+  useEffect(() => {
     // 사용자 정보 로딩이 완료된 후에만 WebSocket 연결
     if (userLoading) return;
 
-    const ws = new WebSocket((location.protocol==='https:'?'wss':'ws')+'://'+location.host+'/chat/ws');
+    const ws = new WebSocket((location.protocol === 'https:' ? 'wss' : 'ws') + '://' + location.host + '/chat/ws');
     wsRef.current = ws;
-    
+
     ws.onopen = () => {
       setIsConnected(true);
       // 연결 즉시 사용자 입장 메시지 전송
       if (currentUser) {
         // 💬 채팅방 입장 - RUM 추적
         rumAction('chat_room_joined', { user: currentUser });
-        
-        ws.send(JSON.stringify({ 
-          type: 'user_join', 
-          user: currentUser 
+
+        ws.send(JSON.stringify({
+          type: 'user_join',
+          user: currentUser
         }));
       }
     };
     ws.onclose = () => setIsConnected(false);
     ws.onerror = () => setIsConnected(false);
-    ws.onmessage = (e)=> {
+    ws.onmessage = (e) => {
       const data = JSON.parse(e.data);
-      
+
       // 사용자 목록 업데이트 메시지 처리
       if (data.type === 'user_list_update') {
         setConnectedUsers(data.userList || []);
@@ -88,21 +88,21 @@ export default function Chat(){
         setMsgs(m => [...m, data]);
         // 💬 메시지 수신 - RUM 추적 (본인 메시지가 아닌 경우에만)
         if (data.user !== currentUser) {
-          rumAction('chat_message_received', { 
+          rumAction('chat_message_received', {
             fromUser: data.user,
             messageLength: data.text?.length || 0
           });
         }
       }
     };
-    
-    return ()=> ws.close();
+
+    return () => ws.close();
   }, [userLoading, currentUser]); // userLoading과 currentUser 변경 시 재연결
 
-  function send(e, inputMethod = 'unknown'){
+  function send(e, inputMethod = 'unknown') {
     e?.preventDefault();
     if (!text.trim()) return;
-    
+
     // 💬 채팅 전송 - RUM 추적 (입력 방법 포함)
     const messageData = {
       messageLength: text.trim().length,
@@ -112,7 +112,7 @@ export default function Chat(){
       inputMethod: inputMethod // 입력 방법 추가 (send_button, enter_key 등)
     };
     rumAction('chat_message_sent', messageData);
-    
+
     wsRef.current?.send(JSON.stringify({ text, user: currentUser }));
     setText('');
   }
@@ -144,7 +144,7 @@ export default function Chat(){
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">💬 실시간 채팅</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">실시간 채팅 💬</h1>
             <p className="text-sm md:text-base text-gray-600">다른 플레이어들과 대화해보세요!</p>
           </div>
           <div className="flex items-center gap-2">
@@ -165,7 +165,7 @@ export default function Chat(){
               <h3 className="font-semibold text-gray-700 text-sm">접속 중 ({connectedUsers.length}명)</h3>
             </div>
           </div>
-          
+
           {connectedUsers.length === 0 ? (
             <p className="text-center text-gray-500 text-xs py-2">접속 중인 사용자가 없습니다</p>
           ) : (
@@ -190,60 +190,59 @@ export default function Chat(){
         <div className="flex flex-col md:flex-row gap-4 h-80 md:h-96">
           {/* 채팅 메시지 영역 */}
           <div className="flex-1 overflow-y-auto p-4 bg-gray-50 rounded-lg">
-          {msgs.length === 0 ? (
-            <div className="flex items-center justify-center h-full text-gray-500">
-              <div className="text-center">
-                <div className="text-4xl mb-2">🗨️</div>
-                <p>아직 메시지가 없습니다.</p>
-                <p className="text-sm">첫 번째 메시지를 보내보세요!</p>
+            {msgs.length === 0 ? (
+              <div className="flex items-center justify-center h-full text-gray-500">
+                <div className="text-center">
+                  <div className="text-4xl mb-2">🗨️</div>
+                  <p>아직 메시지가 없습니다.</p>
+                  <p className="text-sm">첫 번째 메시지를 보내보세요!</p>
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {msgs.map((msg, i) => {
-                const isMyMessage = msg.user === currentUser;
-                
-                return (
-                  <div key={i} className={`flex items-start gap-3 ${isMyMessage ? 'flex-row-reverse' : ''}`}>
-                    <Avatar 
-                      placeholderInitials={msg.user?.charAt(0)?.toUpperCase() || '?'} 
-                      rounded 
-                      size="sm"
-                      className={`ring-2 ${isMyMessage ? 'ring-blue-200' : 'ring-purple-200'}`}
-                      data-dd-action-name="채팅 메시지 작성자 아바타 클릭"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className={`flex items-center gap-2 mb-1 ${isMyMessage ? 'flex-row-reverse' : ''}`}>
-                        <span className={`font-semibold text-sm ${isMyMessage ? 'text-blue-700' : 'text-purple-700'}`}>
-                          {msg.user || '익명'} {isMyMessage && '(나)'}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {new Date(msg.ts || Date.now()).toLocaleTimeString()}
-                        </span>
-                      </div>
-                      <div className={`p-3 rounded-lg shadow-sm border ${
-                        isMyMessage 
-                          ? 'bg-blue-100 border-blue-200' 
-                          : 'bg-white border-gray-100'
-                      }`}>
-                        <p className="text-gray-800 text-sm break-words">{msg.text}</p>
+            ) : (
+              <div className="space-y-3">
+                {msgs.map((msg, i) => {
+                  const isMyMessage = msg.user === currentUser;
+
+                  return (
+                    <div key={i} className={`flex items-start gap-3 ${isMyMessage ? 'flex-row-reverse' : ''}`}>
+                      <Avatar
+                        placeholderInitials={msg.user?.charAt(0)?.toUpperCase() || '?'}
+                        rounded
+                        size="sm"
+                        className={`ring-2 ${isMyMessage ? 'ring-blue-200' : 'ring-purple-200'}`}
+                        data-dd-action-name="채팅 메시지 작성자 아바타 클릭"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className={`flex items-center gap-2 mb-1 ${isMyMessage ? 'flex-row-reverse' : ''}`}>
+                          <span className={`font-semibold text-sm ${isMyMessage ? 'text-blue-700' : 'text-purple-700'}`}>
+                            {msg.user || '익명'} {isMyMessage && '(나)'}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {new Date(msg.ts || Date.now()).toLocaleTimeString()}
+                          </span>
+                        </div>
+                        <div className={`p-3 rounded-lg shadow-sm border ${isMyMessage
+                            ? 'bg-blue-100 border-blue-200'
+                            : 'bg-white border-gray-100'
+                          }`}>
+                          <p className="text-gray-800 text-sm break-words">{msg.text}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-              <div ref={messagesEndRef} />
-            </div>
-          )}
+                  );
+                })}
+                <div ref={messagesEndRef} />
+              </div>
+            )}
           </div>
-          
+
           {/* 데스크톱: 오른쪽 사용자 목록 (모바일에서는 숨김) */}
           <div className="hidden md:block w-64 bg-white rounded-lg border border-gray-200 p-4">
             <div className="flex items-center gap-2 mb-4">
               <div className="h-2 w-2 bg-green-500 rounded-full"></div>
               <h3 className="font-semibold text-gray-700">접속 중 ({connectedUsers.length}명)</h3>
             </div>
-            
+
             {connectedUsers.length === 0 ? (
               <div className="text-center text-gray-500 text-sm py-8">
                 <div className="text-2xl mb-2">👥</div>
@@ -253,9 +252,9 @@ export default function Chat(){
               <div className="space-y-2">
                 {connectedUsers.map((user, i) => (
                   <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
-                    <Avatar 
-                      placeholderInitials={user.userId?.charAt(0)?.toUpperCase() || '?'} 
-                      rounded 
+                    <Avatar
+                      placeholderInitials={user.userId?.charAt(0)?.toUpperCase() || '?'}
+                      rounded
                       size="xs"
                       className="ring-2 ring-green-200"
                       data-dd-action-name="접속 사용자 아바타 클릭"
@@ -267,7 +266,7 @@ export default function Chat(){
                         </span>
                       </div>
                       <p className="text-xs text-gray-500">
-                        {new Date(user.connectionTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} 입장
+                        {new Date(user.connectionTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} 입장
                       </p>
                     </div>
                   </div>
@@ -288,7 +287,7 @@ export default function Chat(){
             sizing="lg"
             disabled={!isConnected}
           />
-          <Button 
+          <Button
             type="submit"
             disabled={!text.trim() || !isConnected}
             className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 flex items-center"

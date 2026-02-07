@@ -155,12 +155,12 @@ export default function Customize() {
     return (
         <div className="max-w-2xl mx-auto">
             <h2 className="text-2xl font-bold text-center text-purple-700 mb-6">
-                🎨 Bits 꾸미기
+                Bits 꾸미기 🎨
             </h2>
 
             {/* 게임 화면 스타일 미리보기 */}
             <div className="bg-white rounded-2xl shadow-lg p-4 mb-6 overflow-hidden">
-                <h3 className="text-lg font-semibold text-gray-700 mb-4 text-center">🎮 미리보기</h3>
+                <h3 className="text-lg font-semibold text-gray-700 mb-4 text-center">미리보기</h3>
 
                 {/* 게임 화면 컨테이너 */}
                 <div style={{
@@ -411,7 +411,7 @@ export default function Customize() {
             <div className="bg-white rounded-2xl shadow-lg p-4 mb-6">
                 {/* 몸 색상 - 플레이 10회 이상 필요 */}
                 <div className="flex items-center gap-3 mb-3">
-                    <span className="text-sm font-medium text-gray-600 whitespace-nowrap">🎨 몸 색상</span>
+                    <span className="text-sm font-medium text-gray-600 whitespace-nowrap">색상</span>
                     <div className="flex gap-2 flex-wrap">
                         {Object.entries(DOG_COLORS).map(([colorKey, colorVal]) => {
                             const isDefault = colorKey === 'white';
@@ -468,7 +468,7 @@ export default function Customize() {
 
                 {/* 모자 - 최고 점수 500점 이상 필요 */}
                 <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-gray-600 whitespace-nowrap">🎩 모자</span>
+                    <span className="text-sm font-medium text-gray-600 whitespace-nowrap">모자</span>
                     <div className="flex gap-2 flex-wrap">
                         {HAT_OPTIONS.map(hat => {
                             const isDefault = hat.code === 'none';

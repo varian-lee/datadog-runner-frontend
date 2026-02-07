@@ -158,7 +158,7 @@ export default function App() {
                   onClick={openAchievements}
                   className="cursor-pointer"
                 >
-                  🏆 업적 보기
+                  업적 보기
                 </Dropdown.Item>
                 <Dropdown.Divider />
                 {/* 로그아웃: 기존 API 호출 방식 → 즉시 상태 리셋으로 UX 개선 */}
@@ -170,16 +170,16 @@ export default function App() {
             </div>
             <Navbar.Collapse>
               <Navbar.Link as={Link} to="/game" className="text-white hover:text-purple-200 text-base font-medium">
-                🎮 게임 하기
+                게임 하기
               </Navbar.Link>
               <Navbar.Link as={Link} to="/ranking" className="text-white hover:text-purple-200 text-base font-medium">
-                🏆 랭킹 보기
+                랭킹 보기
               </Navbar.Link>
               <Navbar.Link as={Link} to="/chat" className="text-white hover:text-purple-200 text-base font-medium">
-                💬 채팅
+                채팅
               </Navbar.Link>
               <Navbar.Link as={Link} to="/customize" className="text-white hover:text-purple-200 text-base font-medium">
-                🎨 꾸미기
+                꾸미기
               </Navbar.Link>
             </Navbar.Collapse>
           </>
