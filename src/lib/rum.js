@@ -90,7 +90,11 @@ export function initRUM() {
 }
 
 export function rumAction(name, attrs = {}) {
-  if (window.DD_RUM?.addAction) window.DD_RUM.addAction(name, attrs);
+  if (window.DD_RUM?.addAction) {
+    window.DD_RUM.addAction(name, attrs);
+  } else {
+    console.warn('⚠️ RUM addAction 사용 불가:', { name, attrs });
+  }
 }
 
 /**
@@ -130,6 +134,8 @@ export function setRumGameViewContext(context) {
   if (window.DD_RUM?.setViewContext) {
     window.DD_RUM.setViewContext(context);
     console.log('🎮 RUM 게임 View Context 초기화:', context);
+  } else {
+    console.warn('⚠️ RUM setViewContext 사용 불가:', context);
   }
 }
 
