@@ -138,11 +138,15 @@ export function setRumGameViewContext(context) {
  * - isGameStarted: 게임 시작 여부
  * - isGameEnded: 게임 종료 여부
  * - playTimeMs: 플레이 시간 (밀리초)
+ * 
+ * 주의: Datadog RUM SDK는 setViewContextProperty를 사용해야 함 (addViewContext 없음)
  */
 export function addRumGameViewContext(key, value) {
-  if (window.DD_RUM?.addViewContext) {
-    window.DD_RUM.addViewContext(key, value);
+  if (window.DD_RUM?.setViewContextProperty) {
+    window.DD_RUM.setViewContextProperty(key, value);
     console.log(`🎮 RUM 게임 View Context 추가: ${key} =`, value);
+  } else {
+    console.warn(`⚠️ RUM setViewContextProperty 사용 불가:`, { key, value });
   }
 }
 
