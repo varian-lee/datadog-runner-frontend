@@ -222,8 +222,8 @@ export default function Chat() {
                           </span>
                         </div>
                         <div className={`p-3 rounded-lg shadow-sm border ${isMyMessage
-                            ? 'bg-blue-100 border-blue-200'
-                            : 'bg-white border-gray-100'
+                          ? 'bg-blue-100 border-blue-200'
+                          : 'bg-white border-gray-100'
                           }`}>
                           <p className="text-gray-800 text-sm break-words">{msg.text}</p>
                         </div>
@@ -236,9 +236,9 @@ export default function Chat() {
             )}
           </div>
 
-          {/* 데스크톱: 오른쪽 사용자 목록 (모바일에서는 숨김) */}
-          <div className="hidden md:block w-64 bg-white rounded-lg border border-gray-200 p-4">
-            <div className="flex items-center gap-2 mb-4">
+          {/* 데스크톱: 오른쪽 사용자 목록 (모바일에서는 숨김) - 부모 높이에 맞춤 + 내부 스크롤 */}
+          <div className="hidden md:flex w-64 bg-white rounded-lg border border-gray-200 p-4 flex-col overflow-hidden">
+            <div className="flex items-center gap-2 mb-4 flex-shrink-0">
               <div className="h-2 w-2 bg-green-500 rounded-full"></div>
               <h3 className="font-semibold text-gray-700">접속 중 ({connectedUsers.length}명)</h3>
             </div>
@@ -249,7 +249,7 @@ export default function Chat() {
                 <p>접속 중인 사용자가 없습니다</p>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-2 flex-1 overflow-y-auto">
                 {connectedUsers.map((user, i) => (
                   <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
                     <Avatar

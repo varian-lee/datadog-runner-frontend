@@ -89,8 +89,10 @@ export default function Customize() {
     const [achievements, setAchievements] = useState({
         bestScore: 0,
         playCount: 0,
+        profileCompletion: 0,
         canSelectHat: false,
         canSelectColor: false,
+        canSelectSpecial: false,
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -415,8 +417,22 @@ export default function Customize() {
                     <div className="flex gap-2 flex-wrap">
                         {Object.entries(DOG_COLORS).map(([colorKey, colorVal]) => {
                             const isDefault = colorKey === 'white';
-                            const isLocked = !isDefault && !achievements.canSelectColor;
+                            const isSpecial = colorKey === 'starlight';
+                            // 별빛: 플레이 10회 + 히든조건, 그 외: 플레이 10회
+                            const isLocked = isSpecial
+                                ? !achievements.canSelectSpecial
+                                : (!isDefault && !achievements.canSelectColor);
                             const isSelected = dogCustomization.bodyColor === colorKey;
+
+                            // 잠금 메시지
+                            let lockMessage = '';
+                            if (isLocked) {
+                                if (isSpecial) {
+                                    lockMessage = `🔒 히든 조건 충족 필요`;
+                                } else {
+                                    lockMessage = `🔒 플레이 10회 이상 필요 (현재: ${achievements.playCount}회)`;
+                                }
+                            }
 
                             return (
                                 <div key={colorKey} style={{ position: 'relative' }}>
@@ -437,7 +453,7 @@ export default function Customize() {
                                             fontWeight: 'bold',
                                             color: '#666'
                                         }}
-                                        title={isLocked ? `🔒 총 플레이 횟수가 10번 이상이어야 합니다. (현재: ${achievements.playCount}회)` : colorVal.name}
+                                        title={isLocked ? lockMessage : colorVal.name}
                                     >
                                         {colorVal.sparkle ? '?' : ''}
                                     </button>
@@ -472,8 +488,22 @@ export default function Customize() {
                     <div className="flex gap-2 flex-wrap">
                         {HAT_OPTIONS.map(hat => {
                             const isDefault = hat.code === 'none';
-                            const isLocked = !isDefault && !achievements.canSelectHat;
+                            const isSpecial = hat.code === 'gat';
+                            // 갓: 최고 점수 500점 + 히든 조건, 그 외: 최고 점수 500점
+                            const isLocked = isSpecial
+                                ? !achievements.canSelectSpecial
+                                : (!isDefault && !achievements.canSelectHat);
                             const isSelected = dogCustomization.hatCode === hat.code;
+
+                            // 잠금 메시지
+                            let lockMessage = '';
+                            if (isLocked) {
+                                if (isSpecial) {
+                                    lockMessage = `🔒 히든 조건 충족 필요`;
+                                } else {
+                                    lockMessage = `🔒 최고 점수 500점 이상 필요 (현재: ${achievements.bestScore}점)`;
+                                }
+                            }
 
                             return (
                                 <div key={hat.code} style={{ position: 'relative' }}>
@@ -488,7 +518,7 @@ export default function Customize() {
                                             border: isSelected ? '2px solid #632CA6' : '2px solid #ddd',
                                             cursor: isLocked ? 'not-allowed' : 'pointer'
                                         }}
-                                        title={isLocked ? `🔒 최고 점수가 500점 이상이어야 합니다. (현재: ${achievements.bestScore}점)` : hat.name}
+                                        title={isLocked ? lockMessage : hat.name}
                                     >
                                         {hat.emoji}
                                     </button>

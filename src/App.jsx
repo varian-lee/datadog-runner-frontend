@@ -3,7 +3,7 @@
 import { Avatar, Dropdown, Modal, Navbar } from 'flowbite-react';
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router-dom';
-import { clearRumUser, setRumUser } from './lib/rum';
+import { clearRumUser, setRumUser, setRumUserProfile } from './lib/rum';
 import Chat from './pages/Chat.jsx';
 import Customize from './pages/Customize.jsx';
 import Game from './pages/Game.jsx';
@@ -30,6 +30,28 @@ export default function App() {
   });
   const [loadingAchievements, setLoadingAchievements] = useState(false);
 
+  // 📋 프로필 모달 상태
+  const [showProfile, setShowProfile] = useState(false);
+  const [profileData, setProfileData] = useState({
+    gender: '',
+    ageGroup: '',
+    region: '',
+    gameLove: '',
+    datadogExp: '',
+  });
+  const [loadingProfile, setLoadingProfile] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileMessage, setProfileMessage] = useState('');
+
+  // 프로필 옵션
+  const PROFILE_OPTIONS = {
+    gender: { label: '성별', options: [{ value: 'male', label: '남' }, { value: 'female', label: '여' }, { value: 'other', label: '그외' }] },
+    ageGroup: { label: '나이대', options: [{ value: 'under10', label: '10대 이하' }, { value: '20s', label: '20대' }, { value: '30s', label: '30대' }, { value: '40s', label: '40대' }, { value: '50s', label: '50대' }, { value: 'over60', label: '60대 이상' }] },
+    region: { label: '지역', options: [{ value: 'seoul_gangnam', label: '서울(강남)' }, { value: 'seoul_gangbuk', label: '서울(강북)' }, { value: 'gyeonggi_south', label: '경기(남부)' }, { value: 'gyeonggi_north', label: '경기(북부)' }, { value: 'other_region', label: '그 외' }] },
+    gameLove: { label: '평소 게임을 좋아하시나요?', options: [{ value: 'love', label: '매우 좋아함' }, { value: 'like', label: '좋아함' }, { value: 'neutral', label: '보통' }, { value: 'dislike', label: '별로' }] },
+    datadogExp: { label: 'Datadog 경험', options: [{ value: 'none', label: '처음 들어봄' }, { value: 'beginner', label: '입문' }, { value: 'intermediate', label: '중급' }, { value: 'advanced', label: '고급' }] },
+  };
+
   // 🏆 업적 조회 함수
   const fetchAchievements = async () => {
     setLoadingAchievements(true);
@@ -48,10 +70,70 @@ export default function App() {
     }
   };
 
+  // 📋 프로필 조회 함수
+  const fetchProfile = async () => {
+    setLoadingProfile(true);
+    // 먼저 초기값으로 리셋 (이전 계정 데이터 제거)
+    const initialProfile = { gender: '', ageGroup: '', region: '', gameLove: '', datadogExp: '' };
+    setProfileData(initialProfile);
+    try {
+      const response = await fetch('/api/profile', { credentials: 'include' });
+      if (response.ok) {
+        const data = await response.json();
+        const mergedProfile = { ...initialProfile, ...data };
+        setProfileData(mergedProfile);
+        // 🎯 RUM Global Context에 프로필 설정
+        setRumUserProfile(mergedProfile);
+      }
+    } catch (e) {
+      console.error('프로필 조회 실패:', e);
+    } finally {
+      setLoadingProfile(false);
+    }
+  };
+
+  // 📋 프로필 저장 함수
+  const saveProfile = async () => {
+    setSavingProfile(true);
+    setProfileMessage('');
+    try {
+      const response = await fetch('/api/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(profileData),
+      });
+      if (response.ok) {
+        setProfileMessage('✅ 저장되었습니다!');
+        // 🎯 RUM Global Context에 프로필 업데이트
+        setRumUserProfile(profileData);
+        setTimeout(() => setProfileMessage(''), 3000);
+      } else {
+        setProfileMessage('❌ 저장 실패');
+      }
+    } catch (e) {
+      console.error('프로필 저장 실패:', e);
+      setProfileMessage('❌ 저장 실패');
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  // 프로필 변경 핸들러
+  const handleProfileChange = (field, value) => {
+    setProfileData(prev => ({ ...prev, [field]: value }));
+  };
+
   // 업적 모달 열기
   const openAchievements = () => {
     fetchAchievements();
     setShowAchievements(true);
+  };
+
+  // 프로필 모달 열기
+  const openProfileInfo = () => {
+    fetchProfile();
+    setShowProfile(true);
   };
 
   // 앱 초기화 시 세션 확인 - 새로고침해도 로그인 상태 유지
@@ -81,6 +163,8 @@ export default function App() {
     setShowSignup(false); // 로그인 화면으로 리셋
     // 🧹 로그아웃 시 RUM 사용자 정보 초기화
     clearRumUser();
+    // 🧹 로그아웃 시 localStorage 캐시 클리어 (다른 계정 데이터 혼동 방지)
+    localStorage.removeItem('dogCustomization');
   };
 
   // 로그인/회원가입 성공 후 처리 - 사용자 정보 갱신
@@ -150,9 +234,15 @@ export default function App() {
               >
                 {/* 사용자 정보 표시: 기존 "user@example.com" → 실제 로그인 사용자 ID */}
                 <Dropdown.Header>
-                  <span className="block text-sm">플레이어</span>
                   <span className="block truncate text-sm font-medium">{currentUser || '사용자'}</span>
                 </Dropdown.Header>
+                {/* 프로필 보기 */}
+                <Dropdown.Item
+                  onClick={openProfileInfo}
+                  className="cursor-pointer"
+                >
+                  내 프로필
+                </Dropdown.Item>
                 {/* 🏆 업적 보기 */}
                 <Dropdown.Item
                   onClick={openAchievements}
@@ -201,7 +291,7 @@ export default function App() {
       <footer className="bg-gradient-to-br from-blue-50 to-purple-50 text-gray-800 py-4 text-center text-sm">
         <div className="mx-auto max-w-7xl px-6">
           <p>
-            © 2025 Datadog Runners. All rights reserved. {' '}
+            © 2025 Datadog Runner. All rights reserved. {' '}
             <a
               href="https://bit.ly/DD-FE-FEEDBACK"
               target="_blank"
@@ -223,7 +313,7 @@ export default function App() {
           root: {
             base: "fixed inset-x-0 top-0 z-50 h-screen overflow-y-auto overflow-x-hidden md:inset-0 md:h-full",
             show: {
-              on: "flex bg-gray-900/30 backdrop-blur-sm",
+              on: "flex bg-gray-900/50 backdrop-blur-sm",
               off: "hidden"
             }
           }
@@ -292,6 +382,113 @@ export default function App() {
                 </div>
               </div>
 
+            </div>
+          )}
+        </Modal.Body>
+      </Modal>
+
+      {/* 📋 프로필 모달 */}
+      <Modal
+        show={showProfile}
+        onClose={() => setShowProfile(false)}
+        size="lg"
+        theme={{
+          root: {
+            base: "fixed inset-x-0 top-0 z-50 h-screen overflow-y-auto overflow-x-hidden md:inset-0 md:h-full",
+            show: {
+              on: "flex bg-gray-900/50 backdrop-blur-sm",
+              off: "hidden"
+            }
+          }
+        }}
+      >
+        <Modal.Header>📋 내 프로필</Modal.Header>
+        <Modal.Body>
+          {loadingProfile ? (
+            <div className="text-center py-8">
+              <div className="animate-spin inline-block w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full"></div>
+              <p className="mt-2 text-gray-500">로딩 중...</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* 플레이어 정보 */}
+              <div className="text-center pb-4 border-b">
+                <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full text-white text-xl font-bold mb-1">
+                  {currentUser?.charAt(0)?.toUpperCase() || '?'}
+                </div>
+                <p className="text-base font-semibold text-gray-700">{currentUser}</p>
+
+                {/* 프로필 완성도 */}
+                {(() => {
+                  const completedCount = Object.keys(PROFILE_OPTIONS).filter(key => profileData[key]).length;
+                  const totalCount = Object.keys(PROFILE_OPTIONS).length;
+                  const percent = Math.round((completedCount / totalCount) * 100);
+                  return (
+                    <div className="mt-3">
+                      <div className="flex items-center justify-center gap-2 mb-1">
+                        <span className="text-xs text-gray-500">프로필 완성도</span>
+                        <span className="text-xs font-bold text-purple-600">{percent}%</span>
+                      </div>
+                      <div className="w-32 mx-auto bg-gray-200 rounded-full h-1.5">
+                        <div
+                          className="bg-gradient-to-r from-purple-500 to-blue-500 h-1.5 rounded-full transition-all duration-300"
+                          style={{ width: `${percent}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* 프로필 옵션들 */}
+              <div className="space-y-4 max-h-[400px] overflow-y-auto">
+                {Object.entries(PROFILE_OPTIONS).map(([field, config]) => (
+                  <div key={field}>
+                    <p className="text-sm font-medium text-gray-700 mb-2">{config.label}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {config.options.map(option => {
+                        const isSelected = profileData[field] === option.value;
+                        return (
+                          <label
+                            key={option.value}
+                            className={`
+                              cursor-pointer px-3 py-1.5 rounded-full border text-sm transition-all
+                              ${isSelected
+                                ? 'bg-purple-600 border-purple-600 text-white'
+                                : 'bg-white border-gray-300 text-gray-600 hover:border-purple-300'
+                              }
+                            `}
+                          >
+                            <input
+                              type="radio"
+                              name={field}
+                              value={option.value}
+                              checked={isSelected}
+                              onChange={() => handleProfileChange(field, option.value)}
+                              className="sr-only"
+                            />
+                            {option.label}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* 저장 버튼 */}
+              <div className="pt-4 border-t">
+                <button
+                  onClick={saveProfile}
+                  disabled={savingProfile}
+                  className="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {savingProfile ? '저장 중...' : '💾 저장하기'}
+                </button>
+                {profileMessage && (
+                  <p className="text-center mt-2 text-sm font-medium">{profileMessage}</p>
+                )}
+              </div>
             </div>
           )}
         </Modal.Body>

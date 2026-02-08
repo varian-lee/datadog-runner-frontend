@@ -61,7 +61,7 @@ export default function Login({ onLogin, onSwitchToSignup }) {
         <Card className="shadow-2xl border-0">
           <div className="text-center mb-6">
             <div className="text-6xl mb-4">🐶</div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Datadog Runners</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Datadog Runner</h1>
             <p className="text-gray-500">게임에 참가하려면 로그인하세요</p>
           </div>
 
@@ -126,7 +126,7 @@ export default function Login({ onLogin, onSwitchToSignup }) {
               <button
                 type="button"
                 onClick={onSwitchToSignup}
-                className="ml-1 text-purple-600 hover:text-purple-700 font-medium text-sm"
+                className="ml-1 text-purple-700 hover:text-purple-800 font-bold text-sm"
               >
                 회원가입
               </button>

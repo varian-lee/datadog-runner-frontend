@@ -1,5 +1,28 @@
 import React, { useEffect, useRef, useState } from "react";
-import { rumAction, setGamePlayedStatus } from '../lib/rum';
+import { addRumGameViewContext, rumAction, setRumGameViewContext } from '../lib/rum';
+
+// 🚨 장애물 타입 정의 (색상 & 메시지)
+const OBSTACLE_TYPES = {
+  security: {
+    color: '#FF4560',      // 빨간색
+    glow: 'rgba(255,90,110,0.6)',
+    message: '이런... 보안사고를 막지 못했습니다! ㅠㅠ',
+    icon: '🔓'
+  },
+  incident: {
+    color: '#FF8C00',      // 주황색
+    glow: 'rgba(255,140,0,0.6)',
+    message: '이런... 장애를 피하지 못했습니다! ㅠㅠ',
+    icon: '⚠️'
+  },
+  bug: {
+    color: '#FFD700',      // 노란색
+    glow: 'rgba(255,215,0,0.6)',
+    message: '이런... 버그 이슈가 발생했습니다! ㅠㅠ',
+    icon: '🐛'
+  }
+};
+const OBSTACLE_TYPE_KEYS = Object.keys(OBSTACLE_TYPES);
 
 // HTML-based Datadog Runner for Session Replay DOM tracking
 export default function Game() {
@@ -8,6 +31,7 @@ export default function Game() {
   const [score, setScore] = useState(0);
   const [best, setBest] = useState(0);
   const [gameOver, setGameOver] = useState(false);
+  const [gameOverMessage, setGameOverMessage] = useState('');
   const [dogPosition, setDogPosition] = useState({ x: 80, y: 210, jumping: false, jumpCount: 0 });
   const [obstacles, setObstacles] = useState([]);
 
@@ -27,6 +51,9 @@ export default function Game() {
   const gameOverRef = useRef(gameOver);
   const bestRef = useRef(best);
   const gameStartTimeRef = useRef(null); // 게임 시작 시간
+  const jumpCountRef = useRef(0);        // 점프 횟수
+  const passedObstaclesRef = useRef(0);  // 통과한 장애물 개수
+  const lastSpeedRef = useRef(6.6);      // 마지막 게임 속도
 
   // Game constants
   const GAME_WIDTH = 900;
@@ -168,8 +195,12 @@ export default function Game() {
     setBest(savedBest);
     bestRef.current = savedBest;
 
-    // 🎮 페이지 로드 시 게임 플레이 상태 초기화
-    setGamePlayedStatus(false);
+    // 🎮 페이지 로드 시 게임 View Context 초기화
+    setRumGameViewContext({
+      isGameStarted: false,
+      isGameEnded: false,
+      playTimeMs: 0
+    });
 
     // 🎯 퍼널 추적: 게임 페이지 방문
     rumAction('page_visited', { page: 'game', previousBest: savedBest });
@@ -274,15 +305,36 @@ export default function Game() {
   }, [score, running]);
 
   // Game over handler
-  const handleGameOver = async () => {
+  const handleGameOver = async (obstacleType = 'incident') => {
     if (gameOverRef.current) return;
 
     setGameOver(true);
     setRunning(false);
 
+    // 🚨 충돌한 장애물 타입에 따른 메시지 설정
+    const obstacleInfo = OBSTACLE_TYPES[obstacleType] || OBSTACLE_TYPES.incident;
+    setGameOverMessage(obstacleInfo.message);
+
     const finalScore = Math.floor(scoreRef.current);
     const playTimeMs = gameStartTimeRef.current ? Date.now() - gameStartTimeRef.current : 0;
-    rumAction('game_over', { score: finalScore, play_time_ms: playTimeMs });
+
+    // 🎮 게임 종료 - View Context 업데이트
+    addRumGameViewContext('isGameEnded', true);
+    addRumGameViewContext('playTimeMs', playTimeMs);
+    addRumGameViewContext('jumpCount', jumpCountRef.current);
+    addRumGameViewContext('passedObstacles', passedObstaclesRef.current);
+    addRumGameViewContext('finalSpeed', lastSpeedRef.current);
+    addRumGameViewContext('finalScore', finalScore);
+    addRumGameViewContext('obstacleType', obstacleType);
+
+    rumAction('game_over', {
+      score: finalScore,
+      play_time_ms: playTimeMs,
+      jump_count: jumpCountRef.current,
+      passed_obstacles: passedObstaclesRef.current,
+      final_speed: lastSpeedRef.current,
+      obstacle_type: obstacleType
+    });
 
     // Update best score
     const newBest = Math.max(bestRef.current, finalScore);
@@ -301,8 +353,8 @@ export default function Game() {
       });
 
       if (response.ok) {
-        // 🏆 게임 완료 - RUM 추적
-        setGamePlayedStatus(true); // 점수 제출 성공 시 게임 완료로 마킹
+        // 🏆 게임 완료 - 점수 제출 성공
+        // (View Context의 isGameEnded는 handleGameOver에서 이미 설정됨)
 
         // 🎯 퍼널 추적: 게임 완료 정보 저장 (랭킹 확인 추적용)
         sessionStorage.setItem('game_completed', JSON.stringify({
@@ -337,10 +389,14 @@ export default function Game() {
       sessionStorage.removeItem(`milestone_${milestone}_reached`);
     });
 
-    // 🎮 게임 시작 - RUM 추적
+    // 🎮 게임 시작 - RUM 추적 (View Context)
     gameStartTimeRef.current = Date.now(); // 시작 시간 기록
+    jumpCountRef.current = 0;              // 점프 횟수 초기화
+    passedObstaclesRef.current = 0;        // 통과한 장애물 초기화
+    lastSpeedRef.current = 6.6;            // 게임 속도 초기화
     rumAction('game_start');
-    setGamePlayedStatus(false); // 게임 시작했지만 아직 완료하지 않음
+    addRumGameViewContext('isGameStarted', true);
+    addRumGameViewContext('isGameEnded', false);
 
     // 게임 시작 시 접속자 점수 업데이트
     fetchUserBestScores(connectedUsers);
@@ -358,6 +414,7 @@ export default function Game() {
         jumpCount: prev.jumpCount + 1,
         velocity: prev.jumpCount === 0 ? JUMP_VELOCITY : JUMP_VELOCITY * 0.85
       }));
+      jumpCountRef.current += 1; // 점프 횟수 증가
       rumAction('jump');
     }
   };
@@ -427,6 +484,7 @@ export default function Game() {
       // 진행 속도: scoreRef.current / 25 (기존 / 30에서 20% 빠르게 조정)
       // 최대 추가 속도: 11 (기존 10에서 10% 증가)
       speed = 6.6 + Math.min(11, Math.floor(scoreRef.current / 25));
+      lastSpeedRef.current = speed; // 마지막 속도 기록
 
       // Dog physics
       setDogPosition(prev => {
@@ -459,32 +517,36 @@ export default function Game() {
       // Smart obstacle spawning (dynamic intervals + random jitter)
       spawnTick++;
       if (spawnTick >= nextSpawn) {
-        const types = [
+        const sizes = [
           { w: 18, h: 28 },
           { w: 28, h: 40 },
           { w: 42, h: 30 },
           { w: 30, h: 120 }
         ];
-        const obstacle = types[Math.floor(Math.random() * types.length)];
+        const obstacle = sizes[Math.floor(Math.random() * sizes.length)];
+        const obstacleType = OBSTACLE_TYPE_KEYS[Math.floor(Math.random() * OBSTACLE_TYPE_KEYS.length)];
 
         setObstacles(prev => [...prev, {
           id: Date.now(),
           x: GAME_WIDTH + 20,
           y: GROUND_Y - obstacle.h,
           width: obstacle.w,
-          height: obstacle.h
+          height: obstacle.h,
+          type: obstacleType
         }]);
 
         // Optional burst spawning (like original)
         if (Math.random() < 0.2) {
           const offset = 40 + Math.floor(Math.random() * 60); // 40~99px ahead
-          const burstObstacle = types[Math.floor(Math.random() * types.length)];
+          const burstObstacle = sizes[Math.floor(Math.random() * sizes.length)];
+          const burstType = OBSTACLE_TYPE_KEYS[Math.floor(Math.random() * OBSTACLE_TYPE_KEYS.length)];
           setObstacles(prev => [...prev, {
             id: Date.now() + 1,
             x: GAME_WIDTH + 20 + offset,
             y: GROUND_Y - burstObstacle.h,
             width: burstObstacle.w,
-            height: burstObstacle.h
+            height: burstObstacle.h,
+            type: burstType
           }]);
         }
 
@@ -493,10 +555,13 @@ export default function Game() {
       }
 
       // Move and clean obstacles
-      setObstacles(prev => prev
-        .map(obs => ({ ...obs, x: obs.x - speed }))
-        .filter(obs => obs.x + obs.width > -50)
-      );
+      setObstacles(prev => {
+        const moved = prev.map(obs => ({ ...obs, x: obs.x - speed }));
+        // 화면 밖으로 나가서 제거될 obstacle 개수 계산
+        const removedCount = moved.filter(obs => obs.x + obs.width <= -50).length;
+        passedObstaclesRef.current += removedCount; // 통과한 장애물 카운트
+        return moved.filter(obs => obs.x + obs.width > -50);
+      });
 
       // Collision detection
       const dog = dogRef.current;
@@ -509,7 +574,7 @@ export default function Game() {
           dog.y + 50 > obs.y &&
           dog.y < obs.y + obs.height
         ) {
-          handleGameOver();
+          handleGameOver(obs.type || 'incident'); // 충돌한 장애물 타입 전달
           return;
         }
       }
@@ -787,63 +852,66 @@ export default function Game() {
             </div>
 
             {/* Obstacles */}
-            {obstacles.map(obstacle => (
-              <div
-                key={obstacle.id}
-                className="obstacle"
-                data-testid={`obstacle-${obstacle.id}`}
-                style={{
-                  position: 'absolute',
-                  left: `${obstacle.x}px`,
-                  top: `${obstacle.y}px`,
-                  width: `${obstacle.width}px`,
-                  height: `${obstacle.height}px`,
-                  zIndex: 10,
-                  // 기존 사각형 배경 제거 (내부에서 디자인함)
-                  background: 'transparent',
-                }}
-              >
-                {/* 에러 불꽃 몸체: 픽셀 느낌을 위해 box-shadow 활용 */}
-                <div style={{
-                  width: '100%',
-                  height: '100%',
-                  background: 'rgb(255, 90, 110)',
-                  borderRadius: '2px',
-                  boxShadow: 'inset -4px -4px 0px rgba(0,0,0,0.2)', // 도트 입체감
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '4px'
-                }}>
-                  {/* 느낌표 (!) 상단 바 */}
+            {obstacles.map(obstacle => {
+              const obsType = OBSTACLE_TYPES[obstacle.type] || OBSTACLE_TYPES.incident;
+              return (
+                <div
+                  key={obstacle.id}
+                  className="obstacle"
+                  data-testid={`obstacle-${obstacle.id}`}
+                  style={{
+                    position: 'absolute',
+                    left: `${obstacle.x}px`,
+                    top: `${obstacle.y}px`,
+                    width: `${obstacle.width}px`,
+                    height: `${obstacle.height}px`,
+                    zIndex: 10,
+                    // 기존 사각형 배경 제거 (내부에서 디자인함)
+                    background: 'transparent',
+                  }}
+                >
+                  {/* 에러 불꽃 몸체: 픽셀 느낌을 위해 box-shadow 활용 */}
                   <div style={{
-                    width: '20%',
-                    height: '40%',
-                    background: 'white',
-                    borderRadius: '20px'
-                  }} />
-                  {/* 느낌표 (!) 하단 점 */}
+                    width: '100%',
+                    height: '100%',
+                    background: obsType.color,
+                    borderRadius: '2px',
+                    boxShadow: `inset -4px -4px 0px rgba(0,0,0,0.2), 0 0 12px ${obsType.glow}`, // 도트 입체감 + 글로우
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '4px'
+                  }}>
+                    {/* 느낌표 (!) 상단 바 */}
+                    <div style={{
+                      width: '20%',
+                      height: '40%',
+                      background: 'white',
+                      borderRadius: '20px'
+                    }} />
+                    {/* 느낌표 (!) 하단 점 */}
+                    <div style={{
+                      width: '20%',
+                      height: '15%',
+                      background: 'white',
+                      borderRadius: '20px'
+                    }} />
+                  </div>
+
+                  {/* 바닥 그림자 (배경과 분리감을 줌) */}
                   <div style={{
-                    width: '20%',
-                    height: '15%',
-                    background: 'white',
-                    borderRadius: '20px'
+                    position: 'absolute',
+                    bottom: '-6px',
+                    left: '10%',
+                    width: '80%',
+                    height: '4px',
+                    background: 'rgba(0,0,0,0.1)',
+                    borderRadius: '50%'
                   }} />
                 </div>
-
-                {/* 바닥 그림자 (배경과 분리감을 줌) */}
-                <div style={{
-                  position: 'absolute',
-                  bottom: '-6px',
-                  left: '10%',
-                  width: '80%',
-                  height: '4px',
-                  background: 'rgba(0,0,0,0.1)',
-                  borderRadius: '50%'
-                }} />
-              </div>
-            ))}
+              )
+            })}
 
             {/* Game Over / Start Overlay */}
             {!running && (
@@ -865,7 +933,7 @@ export default function Game() {
                 }}
               >
                 <h3 style={{ color: '#4b1f7e', marginBottom: '10px' }}>
-                  {gameOver ? "이런... 장애를 피하지 못했습니다! ㅠㅠ" : "Datadog Pup Runner"}
+                  {gameOver ? (gameOverMessage || "이런... 장애를 피하지 못했습니다! ㅠㅠ") : "Datadog Runner"}
                 </h3>
                 <p style={{ fontSize: '14px', color: '#666', marginBottom: '10px' }}>
                   스페이스/위쪽 화살표로 2단 점프 (모바일: 탭)
@@ -916,8 +984,8 @@ export default function Game() {
 
         </div>
 
-        {/* 오른쪽: 동시접속자 패널 - 데스크톱에서만 표시 */}
-        <div className="hidden lg:block w-60 bg-white rounded-lg border border-gray-200 p-3 shadow-sm h-fit">
+        {/* 오른쪽: 동시접속자 패널 - 데스크톱에서만 표시, 고정 높이 + 스크롤 */}
+        <div className="hidden lg:block w-60 bg-white rounded-lg border border-gray-200 p-3 shadow-sm max-h-[420px] flex flex-col">
           {/* 헤더 */}
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -933,14 +1001,14 @@ export default function Game() {
             </button>
           </div>
 
-          {/* 사용자 목록 */}
+          {/* 사용자 목록 - 스크롤 영역 */}
           {connectedUsers.length === 0 ? (
             <div className="text-center text-gray-500 text-sm py-6">
               <div className="text-2xl mb-1">👥</div>
               <p>접속자 없음</p>
             </div>
           ) : (
-            <div className="space-y-2 max-h-72 overflow-y-auto">
+            <div className="space-y-2 flex-1 overflow-y-auto">
               {[...connectedUsers]
                 .sort((a, b) => (userBestScores[b.userId] || 0) - (userBestScores[a.userId] || 0))
                 .map((user, i) => {

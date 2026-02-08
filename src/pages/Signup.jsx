@@ -1,12 +1,64 @@
 import { Alert, Button, Card, Label, TextInput } from 'flowbite-react';
 import { useState } from 'react';
 
+const PROFILE_OPTIONS = {
+  gender: {
+    label: '성별',
+    options: [
+      { value: 'male', label: '남' },
+      { value: 'female', label: '여' },
+      { value: 'other', label: '그외' },
+    ]
+  },
+  ageGroup: {
+    label: '나이대',
+    options: [
+      { value: 'under10', label: '10대 이하' },
+      { value: '20s', label: '20대' },
+      { value: '30s', label: '30대' },
+      { value: '40s', label: '40대' },
+      { value: '50s', label: '50대' },
+      { value: 'over60', label: '60대 이상' },
+    ]
+  },
+  region: {
+    label: '지역',
+    options: [
+      { value: 'seoul_gangnam', label: '서울(강남)' },
+      { value: 'seoul_gangbuk', label: '서울(강북)' },
+      { value: 'gyeonggi_south', label: '경기(남부)' },
+      { value: 'gyeonggi_north', label: '경기(북부)' },
+      { value: 'other_region', label: '그 외' },
+    ]
+  },
+  gameLove: {
+    label: '평소 게임을 좋아하시나요?',
+    options: [
+      { value: 'love', label: '매우 좋아함' },
+      { value: 'like', label: '좋아함' },
+      { value: 'neutral', label: '보통' },
+      { value: 'dislike', label: '별로' },
+    ]
+  }
+};
+
 export default function Signup({ onLogin, onSwitchToLogin }) {
   const [id, setId] = useState('');
   const [pw, setPw] = useState('');
   const [pwConfirm, setPwConfirm] = useState('');
+  const [profile, setProfile] = useState({
+    gender: '',
+    ageGroup: '',
+    region: '',
+    gameLove: '',
+    datadogExp: '',
+  });
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const handleProfileChange = (field, value) => {
+    setProfile(prev => ({ ...prev, [field]: value }));
+  };
 
   const submit = async (e) => {
     e.preventDefault();
@@ -33,7 +85,7 @@ export default function Signup({ onLogin, onSwitchToLogin }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ id, pw })
+        body: JSON.stringify({ id, pw, profile })
       });
 
       const data = await r.json();
@@ -51,60 +103,103 @@ export default function Signup({ onLogin, onSwitchToLogin }) {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="w-full max-w-md">
+    <div className="flex min-h-screen items-center justify-center py-8">
+      <div className="w-full max-w-2xl px-4">
         <Card className="shadow-2xl border-0">
-          <div className="text-center mb-6">
-            <div className="text-6xl mb-4">🐶</div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Datadog Runners</h1>
-            <p className="text-gray-500">새 계정을 만들어 게임을 시작하세요</p>
+          <div className="text-center mb-4">
+            <div className="text-5xl mb-2">🐶</div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-1">Datadog Runner</h1>
+            <p className="text-gray-500 text-sm">새 계정을 만들어 게임을 시작하세요</p>
           </div>
 
-          <form onSubmit={submit} className="space-y-6">
-            <div>
-              <Label htmlFor="userId" value="아이디 (본인 이름을 포함해주세요 - 출석 확인을 위해)" className="mb-2 block text-sm font-medium text-gray-900" />
-              <TextInput
-                id="userId"
-                type="text"
-                placeholder="본인 이름을 포함한 아이디 (3글자 이상)"
-                value={id}
-                onChange={(e) => setId(e.target.value)}
-                required
-                className="w-full"
-                sizing="lg"
-              />
+          <form onSubmit={submit} className="space-y-4">
+            {/* 기본 정보 */}
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="userId" value="아이디" className="mb-1 block text-sm font-medium text-gray-900" />
+                <TextInput
+                  id="userId"
+                  type="text"
+                  placeholder="3글자 이상"
+                  value={id}
+                  onChange={(e) => setId(e.target.value)}
+                  required
+                  className="w-full"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="password" value="비밀번호" className="mb-1 block text-sm font-bold text-gray-900" />
+                  <TextInput
+                    id="password"
+                    type="password"
+                    placeholder="4글자 이상"
+                    value={pw}
+                    onChange={(e) => setPw(e.target.value)}
+                    required
+                    className="w-full"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="passwordConfirm" value="비밀번호 확인" className="mb-1 block text-sm font-bold text-gray-900" />
+                  <TextInput
+                    id="passwordConfirm"
+                    type="password"
+                    placeholder="비밀번호를 다시 입력"
+                    value={pwConfirm}
+                    onChange={(e) => setPwConfirm(e.target.value)}
+                    required
+                    className="w-full"
+                  />
+                </div>
+              </div>
             </div>
 
-            <div>
-              <Label htmlFor="password" value="비밀번호" className="mb-2 block text-sm font-medium text-gray-900" />
-              <TextInput
-                id="password"
-                type="password"
-                placeholder="4글자 이상의 비밀번호"
-                value={pw}
-                onChange={(e) => setPw(e.target.value)}
-                required
-                className="w-full"
-                sizing="lg"
-              />
+            {/* 구분선 */}
+            <div className="border-t border-gray-200 pt-4 mt-4">
+              <p className="text-sm font-bold text-orange-600 mb-3">추가 정보 (선택사항)</p>
             </div>
 
-            <div>
-              <Label htmlFor="passwordConfirm" value="비밀번호 확인" className="mb-2 block text-sm font-medium text-gray-900" />
-              <TextInput
-                id="passwordConfirm"
-                type="password"
-                placeholder="비밀번호를 다시 입력하세요"
-                value={pwConfirm}
-                onChange={(e) => setPwConfirm(e.target.value)}
-                required
-                className="w-full"
-                sizing="lg"
-              />
+            {/* 프로필 옵션들 */}
+            <div className="space-y-4">
+              {Object.entries(PROFILE_OPTIONS).map(([field, config]) => (
+                <div key={field}>
+                  <Label value={config.label} className="mb-2 block text-sm font-medium text-orange-400" />
+                  <div className="flex flex-wrap gap-2">
+                    {config.options.map(option => {
+                      const isSelected = profile[field] === option.value;
+                      return (
+                        <label
+                          key={option.value}
+                          className={`
+                            cursor-pointer px-3 py-1.5 rounded-full border text-sm transition-all
+                            ${isSelected
+                              ? 'bg-purple-600 border-purple-600 text-white'
+                              : 'bg-white border-gray-300 text-gray-600 hover:border-purple-300'
+                            }
+                          `}
+                        >
+                          <input
+                            type="radio"
+                            name={field}
+                            value={option.value}
+                            checked={isSelected}
+                            onChange={() => handleProfileChange(field, option.value)}
+                            className="sr-only"
+                          />
+                          {option.label}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
 
             {err && (
-              <Alert color="failure" className="mb-4">
+              <Alert color="failure">
                 <span className="font-medium">오류!</span> {err}
               </Alert>
             )}
@@ -133,7 +228,7 @@ export default function Signup({ onLogin, onSwitchToLogin }) {
             </Button>
           </form>
 
-          <div className="mt-6 text-center">
+          <div className="mt-4 text-center">
             <p className="text-sm text-gray-500">
               이미 계정이 있으신가요?
               <button

@@ -111,13 +111,38 @@ export function setRumUser(userInfo) {
 }
 
 /**
- * 🎮 게임 플레이 상태 설정 - 글로벌 컨텍스트
- * 게임 시작/완료 시 호출하여 사용자 행동 패턴 분석
+ * 🎮 게임 플레이 상태 설정 - 글로벌 컨텍스트 (레거시, 삭제 예정)
+ * @deprecated View Context 함수들(setGameViewContext, addGameViewContext)를 사용하세요
  */
 export function setGamePlayedStatus(isPlayed) {
   if (window.DD_RUM?.setGlobalContextProperty) {
     window.DD_RUM.setGlobalContextProperty('isPlayed', isPlayed);
-    console.log('🎮 게임 플레이 상태 업데이트:', { isPlayed });
+    console.log('🎮 [레거시] 게임 플레이 상태 업데이트:', { isPlayed });
+  }
+}
+
+/**
+ * 🎮 RUM 게임 View Context 초기화 - 페이지 로드 시 호출
+ * View Context는 현재 페이지(View)에만 적용되어 게임별 상태 추적에 적합
+ * https://docs.datadoghq.com/real_user_monitoring/application_monitoring/browser/advanced_configuration/?tab=npm#view-context
+ */
+export function setRumGameViewContext(context) {
+  if (window.DD_RUM?.setViewContext) {
+    window.DD_RUM.setViewContext(context);
+    console.log('🎮 RUM 게임 View Context 초기화:', context);
+  }
+}
+
+/**
+ * 🎮 RUM 게임 View Context에 속성 추가 - 게임 시작/종료 시 호출
+ * - isGameStarted: 게임 시작 여부
+ * - isGameEnded: 게임 종료 여부
+ * - playTimeMs: 플레이 시간 (밀리초)
+ */
+export function addRumGameViewContext(key, value) {
+  if (window.DD_RUM?.addViewContext) {
+    window.DD_RUM.addViewContext(key, value);
+    console.log(`🎮 RUM 게임 View Context 추가: ${key} =`, value);
   }
 }
 
@@ -133,11 +158,53 @@ export function addRumContext(key, value) {
 }
 
 /**
- * 🧹 사용자 로그아웃 시 정보 초기화
+ * 📋 RUM 사용자 프로필 Global Context 설정
+ * 로그인 시 & 프로필 업데이트 시 호출하여 세션에 프로필 정보 추가
+ * RUM에서 사용자 세그먼트별 분석 가능 (성별, 연령대, 지역 등)
+ */
+export function setRumUserProfile(profile) {
+  if (window.DD_RUM?.setGlobalContextProperty) {
+    // 각 프로필 속성을 개별 Global Context로 설정
+    if (profile.gender) {
+      window.DD_RUM.setGlobalContextProperty('user.gender', profile.gender);
+    }
+    if (profile.ageGroup) {
+      window.DD_RUM.setGlobalContextProperty('user.ageGroup', profile.ageGroup);
+    }
+    if (profile.region) {
+      window.DD_RUM.setGlobalContextProperty('user.region', profile.region);
+    }
+    if (profile.gameLove) {
+      window.DD_RUM.setGlobalContextProperty('user.gameLove', profile.gameLove);
+    }
+    if (profile.datadogExp) {
+      window.DD_RUM.setGlobalContextProperty('user.datadogExp', profile.datadogExp);
+    }
+    console.log('📋 RUM User Profile 설정:', profile);
+  }
+}
+
+/**
+ * 🧹 RUM 사용자 프로필 Global Context 초기화
+ */
+export function clearRumUserProfile() {
+  if (window.DD_RUM?.removeGlobalContextProperty) {
+    window.DD_RUM.removeGlobalContextProperty('user.gender');
+    window.DD_RUM.removeGlobalContextProperty('user.ageGroup');
+    window.DD_RUM.removeGlobalContextProperty('user.region');
+    window.DD_RUM.removeGlobalContextProperty('user.gameLove');
+    window.DD_RUM.removeGlobalContextProperty('user.datadogExp');
+    console.log('🧹 RUM User Profile 초기화 완료');
+  }
+}
+
+/**
+ * 🧹 RUM 사용자 로그아웃 시 정보 초기화
  */
 export function clearRumUser() {
   if (window.DD_RUM?.clearUser) {
     window.DD_RUM.clearUser();
+    clearRumUserProfile(); // 프로필도 함께 클리어
     console.log('🧹 RUM User 정보 초기화 완료');
   }
 }
