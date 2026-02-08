@@ -318,7 +318,7 @@ export default function Game() {
     const finalScore = Math.floor(scoreRef.current);
     const playTimeMs = gameStartTimeRef.current ? Date.now() - gameStartTimeRef.current : 0;
 
-    // 🎮 게임 종료 - View Context 업데이트
+    // 🎮 게임 종료 - View Context 업데이트 (세션 내 View에 귀속되는 상태)
     addRumGameViewContext('isGameEnded', true);
     addRumGameViewContext('playTimeMs', playTimeMs);
     addRumGameViewContext('jumpCount', jumpCountRef.current);
@@ -327,14 +327,8 @@ export default function Game() {
     addRumGameViewContext('finalScore', finalScore);
     addRumGameViewContext('obstacleType', obstacleType);
 
-    rumAction('game_over', {
-      score: finalScore,
-      play_time_ms: playTimeMs,
-      jump_count: jumpCountRef.current,
-      passed_obstacles: passedObstaclesRef.current,
-      final_speed: lastSpeedRef.current,
-      obstacle_type: obstacleType
-    });
+    // 🎯 게임 종료 Action - 점수만 기록 (상세 정보는 View Context에)
+    rumAction('game_over', { score: finalScore });
 
     // Update best score
     const newBest = Math.max(bestRef.current, finalScore);

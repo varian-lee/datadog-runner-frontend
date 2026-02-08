@@ -136,6 +136,20 @@ export default function App() {
     setShowProfile(true);
   };
 
+  // 📋 프로필을 RUM Global Context에 설정하는 함수 (로그인 시 호출)
+  const loadProfileForRum = async () => {
+    try {
+      const response = await fetch('/api/profile', { credentials: 'include' });
+      if (response.ok) {
+        const profile = await response.json();
+        setRumUserProfile(profile);
+        console.log('📋 로그인 시 RUM 프로필 설정 완료:', profile);
+      }
+    } catch (e) {
+      console.warn('프로필 RUM 설정 실패:', e);
+    }
+  };
+
   // 앱 초기화 시 세션 확인 - 새로고침해도 로그인 상태 유지
   useEffect(() => {
     fetch('/api/session/me', { credentials: 'include' })
@@ -146,6 +160,8 @@ export default function App() {
         setCurrentUser(data.user_id || '사용자');
         // 🔐 앱 초기화 시 RUM에 사용자 정보 설정
         setRumUser(data);
+        // 📋 프로필 정보도 RUM Global Context에 설정
+        loadProfileForRum();
       })
       .catch(() => {
         setAuthed(false);
@@ -177,6 +193,8 @@ export default function App() {
         setCurrentUser(data.user_id || '사용자');
         // 🔐 로그인 성공 시 RUM에 사용자 정보 설정
         setRumUser(data);
+        // 📋 프로필 정보도 RUM Global Context에 설정
+        loadProfileForRum();
       })
       .catch(() => {
         setAuthed(false);
