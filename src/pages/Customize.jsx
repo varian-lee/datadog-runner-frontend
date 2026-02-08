@@ -418,9 +418,9 @@ export default function Customize() {
                         {Object.entries(DOG_COLORS).map(([colorKey, colorVal]) => {
                             const isDefault = colorKey === 'white';
                             const isSpecial = colorKey === 'starlight';
-                            // 별빛: 플레이 10회 + 히든조건, 그 외: 플레이 10회
+                            // 별빛: 플레이 10회 AND 히든조건, 그 외: 플레이 10회
                             const isLocked = isSpecial
-                                ? !achievements.canSelectSpecial
+                                ? !(achievements.canSelectColor && achievements.canSelectSpecial)
                                 : (!isDefault && !achievements.canSelectColor);
                             const isSelected = dogCustomization.bodyColor === colorKey;
 
@@ -489,9 +489,9 @@ export default function Customize() {
                         {HAT_OPTIONS.map(hat => {
                             const isDefault = hat.code === 'none';
                             const isSpecial = hat.code === 'gat';
-                            // 갓: 최고 점수 500점 + 히든 조건, 그 외: 최고 점수 500점
+                            // 갓: 최고 점수 500점 AND 히든 조건, 그 외: 최고 점수 500점
                             const isLocked = isSpecial
-                                ? !achievements.canSelectSpecial
+                                ? !(achievements.canSelectHat && achievements.canSelectSpecial)
                                 : (!isDefault && !achievements.canSelectHat);
                             const isSelected = dogCustomization.hatCode === hat.code;
 
