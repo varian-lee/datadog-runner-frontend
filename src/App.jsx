@@ -171,16 +171,19 @@ export default function App() {
       });
   }, []);
 
-  // 로그아웃 핸들러 - 프론트엔드 상태 리셋으로 UX 개선
-  // 기존: API 호출 후 리다이렉트 → 현재: 즉시 로그인 화면으로 이동
+  // 로그아웃 핸들러 - 서버 세션 삭제 후 프론트엔드 상태 리셋
   const handleLogout = () => {
-    setAuthed(false);
-    setCurrentUser('');
-    setShowSignup(false); // 로그인 화면으로 리셋
-    // 🧹 로그아웃 시 RUM 사용자 정보 초기화
-    clearRumUser();
-    // 🧹 로그아웃 시 localStorage 캐시 클리어 (다른 계정 데이터 혼동 방지)
-    localStorage.removeItem('dogCustomization');
+    // 🔐 서버 세션 쿠키 삭제 (Redis 세션도 삭제됨)
+    fetch('/api/auth/logout', { credentials: 'include' })
+      .finally(() => {
+        setAuthed(false);
+        setCurrentUser('');
+        setShowSignup(false); // 로그인 화면으로 리셋
+        // 🧹 로그아웃 시 RUM 사용자 정보 초기화
+        clearRumUser();
+        // 🧹 로그아웃 시 localStorage 캐시 클리어 (다른 계정 데이터 혼동 방지)
+        localStorage.removeItem('dogCustomization');
+      });
   };
 
   // 로그인/회원가입 성공 후 처리 - 사용자 정보 갱신
