@@ -265,15 +265,6 @@ export default function Game() {
     }
   };
 
-  // 🐛 점수 새로고침 버튼용 함수 (일부러 에러 포함 - Datadog RUM 테스트용)
-  const refreshScoresWithError = () => {
-    // 일부러 에러 발생 (undefined 객체 접근)
-    const fakeObject = undefined;
-    console.log(fakeObject.property); // TypeError: Cannot read properties of undefined
-
-    fetchUserBestScores(connectedUsers);
-  };
-
   // Update refs when state changes
   useEffect(() => { runningRef.current = running; }, [running]);
   useEffect(() => { scoreRef.current = score; }, [score]);
@@ -958,8 +949,16 @@ export default function Game() {
             </button>
             <button
               onClick={() => {
-                localStorage.removeItem("best");
-                setBest(0);
+                try {
+                  const bestScore = 'best';
+                  console.log("현재 최고점 : " + bestScore.property.name);
+
+                  localStorage.removeItem("best");
+                  setBest(0);
+                } catch (error) {
+                  alert(`에러가 발생했습니다!`);
+                  console.error('최고점 초기화 에러:', error);
+                }
               }}
               data-testid="reset-best-button"
               style={{
@@ -972,7 +971,7 @@ export default function Game() {
                 fontSize: '14px'
               }}
             >
-              최고점 초기화
+              본인 최고점 초기화
             </button>
           </div>
 
@@ -986,13 +985,6 @@ export default function Game() {
               <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
               <h3 className="text-sm font-semibold text-gray-700">접속 중 ({connectedUsers.length})</h3>
             </div>
-            <button
-              onClick={refreshScoresWithError}
-              className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-600"
-              title="점수 새로고침"
-            >
-              🔄
-            </button>
           </div>
 
           {/* 사용자 목록 - 스크롤 영역 */}
