@@ -314,7 +314,7 @@ export default function App() {
           <p>
             © 2025 Datadog Runner. All rights reserved. {' '}
             <a
-              href="https://bit.ly/DD-FE-FEEDBACK"
+              href="https://forms.gle/WdRTZYG7QnHR2WNCA"
               target="_blank"
               rel="noopener noreferrer"
               className="text-purple-600 hover:text-purple-700 underline"
